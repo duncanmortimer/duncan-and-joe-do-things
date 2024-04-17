@@ -1,5 +1,5 @@
 from urllib.parse import urlparse
-from typing import Callable, List
+from typing import Callable, List, Generator
 
 class Crawler:
     def __init__(self, get_links_for_url: Callable[[str], List[str]]) -> None:
@@ -12,13 +12,14 @@ class Crawler:
 
         return parsed_url.hostname == parsed_starting_url.hostname
     
-    def crawl(self, starting_url: str) -> dict[str, List[str]]:
+    def _crawl(self, starting_url: str) -> Generator[tuple[str, List[str]], None, None]:
         urls_to_crawl = [starting_url]
-        result: dict[str, List[str]] = {}
         while urls_to_crawl:
             url = urls_to_crawl.pop(0)
             links = self.get_links_for_url(url)
             internal_links = [link for link in links if self.is_internal_url(link, starting_url)]
             urls_to_crawl += internal_links
-            result[url] = links
-        return result
+            yield (url, links)
+
+    def crawl(self, starting_url: str) -> dict[str, List[str]]:
+        return {url: links for url, links in self._crawl(starting_url)}
