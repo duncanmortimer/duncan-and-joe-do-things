@@ -1,5 +1,5 @@
 import pytest
-from crawler import Crawler
+from .crawler import Crawler
 from typing import List
 
 

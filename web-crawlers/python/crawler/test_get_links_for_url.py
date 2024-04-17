@@ -1,4 +1,4 @@
-from get_links_for_url import make_get_links_for_url
+from .get_links_for_url import make_get_links_for_url
 
 
 def test_should_return_empty_list_for_page_with_no_links():
