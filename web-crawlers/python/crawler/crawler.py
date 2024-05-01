@@ -14,11 +14,13 @@ class Crawler:
     
     def _crawl(self, starting_url: str) -> Generator[tuple[str, List[str]], None, None]:
         urls_to_crawl = [starting_url]
+        crawled_urls: set[str] = set()
         while urls_to_crawl:
             url = urls_to_crawl.pop(0)
             links = self.get_links_for_url(url)
+            crawled_urls.add(url)
             internal_links = [link for link in links if self.is_internal_url(link, starting_url)]
-            urls_to_crawl += internal_links
+            urls_to_crawl += [link for link in internal_links if link not in crawled_urls]
             yield (url, links)
 
     def crawl(self, starting_url: str) -> dict[str, List[str]]:
