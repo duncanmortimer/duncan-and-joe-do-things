@@ -26,24 +26,26 @@ def generate_page(links: list[int]) -> str:
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_dir_path = Path(temp_dir)
-        # Generate page
-        page_ids = list(range(0, 100))
-        for page_number in page_ids:
-            with open(temp_dir_path / f"page_{page_number}.html", "w") as f:
+        with open("error.log", 'w') as errlog:
+            temp_dir_path = Path(temp_dir)
+            # Generate page
+            page_ids = list(range(0, 100))
+            for page_number in page_ids:
+                with open(temp_dir_path / f"page_{page_number}.html", "w") as f:
+                    f.write(generate_page(sample(page_ids, 10)))
+            with open(temp_dir_path / "index.html", "w") as f:
                 f.write(generate_page(sample(page_ids, 10)))
-        with open(temp_dir_path / "index.html", "w") as f:
-            f.write(generate_page(sample(page_ids, 10)))
-        # Start hosting
+            # Start hosting
 
-        p = subprocess.Popen(["python", "-m", "http.server", "9876"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=temp_dir)
+            p = subprocess.Popen(["http-server", temp_dir, "-p", "9876"], stdout=subprocess.DEVNULL, stderr=errlog)
 
-        sleep(1)
+            sleep(1)
 
-        TRIES = 5
-        try:
-            # start timer
-            result = timeit.timeit(f'crawl("http://localhost:9876")', setup='from crawler import crawl', number=TRIES)
-            print(result / TRIES)
-        finally:
-            p.kill()
+            TRIES = 3
+            try:
+                # start timer
+                result = timeit.timeit(f'crawl("http://127.0.0.1:9876")', setup='from crawler import crawl', number=TRIES)
+                print(result / TRIES)
+            finally:
+                print("Exception - stopping server")
+                p.kill()
