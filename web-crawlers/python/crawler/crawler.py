@@ -1,19 +1,26 @@
 from urllib.parse import urlparse
 from asyncio import gather, run
-from typing import Callable, List, Generator, Coroutine
+from typing import Callable, List, Generator
 
 import aiohttp
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-async def get_links_async(url: str) -> List[str]:
-    async with aiohttp.ClientSession() as session:
+MAX_TRIES = 0
+
+async def get_links_async(url: str, session: aiohttp.ClientSession, tries: int = 0) -> List[str]:
+    if tries > MAX_TRIES:
+        raise Exception(f"Max tries exceeded for {url}")
+    try:
         async with session.get(url) as response:
             print(f"Getting {url} ...")
             page_text = await response.text()
             soup = BeautifulSoup(page_text, "html.parser")
             anchors = soup.find_all("a")
             return [urljoin(url, anchor.get('href')) for anchor in anchors]
+    except Exception as e:
+        print('Error: ', e)
+        return await get_links_async(url, session, tries + 1)
 
 class Crawler:
     def __init__(self, get_links_for_url: Callable[[str], List[str]]) -> None:
@@ -34,8 +41,9 @@ class Crawler:
             urls_to_crawl = urls_to_crawl[10:]
             
             async def get_urls():
-                results = await gather(*[get_links_async(url) for url in urls])
-                return {url: links for url, links in zip(urls, results)}
+                async with aiohttp.ClientSession() as session:
+                    results = await gather(*[get_links_async(url, session) for url in urls])
+                    return {url: links for url, links in zip(urls, results)}
             url_to_links_map = run(get_urls())
             crawled_urls = crawled_urls.union(urls)
             
